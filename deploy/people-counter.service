@@ -1,0 +1,16 @@
+[Unit]
+Description=Real-Time People Counting System Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/people-counting
+ExecStart=/home/pi/people-counting/venv/bin/python app/main.py --headless --with-api
+Restart=always
+RestartSec=5
+StandardOutput=inherit
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target

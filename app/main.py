@@ -1,0 +1,205 @@
+import sys
+import os
+import time
+import argparse
+import cv2
+import logging
+from pathlib import Path
+
+# Add project root to path so we can import from app
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from app.config import (
+    CAMERA_SOURCE, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS,
+    CONFIDENCE_THRESHOLD, LINE_START, LINE_END, DB_PATH
+)
+from app.camera import VideoStream
+from app.tracker import ObjectTracker
+from app.counter import LineCounter
+from app.database import DatabaseManager
+from api.server import start_api_server
+
+# Setup Logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger("Main")
+
+def main():
+    parser = argparse.ArgumentParser(description="Real-Time People Counting System")
+    parser.add_argument("--source", type=str, default=str(CAMERA_SOURCE),
+                        help=f"Camera source index or video file path (default: {CAMERA_SOURCE})")
+    parser.add_argument("--headless", action="store_true",
+                        help="Run without displaying OpenCV window (recommended for Raspberry Pi)")
+    parser.add_argument("--reset-db", action="store_true",
+                        help="Clear the database before starting")
+    parser.add_argument("--with-api", action="store_true",
+                        help="Start the FastAPI backend server in a background thread")
+    args = parser.parse_args()
+
+    # Parse camera source
+    source = args.source
+    if source.isdigit():
+        source = int(source)
+
+    logger.info("=== Starting People Counting System ===")
+    logger.info(f"Source: {source} | Headless: {args.headless}")
+
+    # Initialize Database
+    db = DatabaseManager(DB_PATH)
+    if args.reset_db:
+        db.clear_data()
+        logger.info("Database cleared as requested.")
+
+    # Fetch latest count state from database to restore counts on restart
+    stats = db.get_current_stats()
+    logger.info(f"Restoring stats from database: IN={stats['total_in']}, OUT={stats['total_out']}")
+
+    # Initialize Camera
+    stream = VideoStream(
+        source=source,
+        width=CAMERA_WIDTH,
+        height=CAMERA_HEIGHT,
+        fps=CAMERA_FPS
+    )
+    
+    try:
+        stream.start()
+    except Exception as e:
+        logger.error(f"Failed to start camera: {e}")
+        return
+
+    # Let camera warm up and check stream stability
+    time.sleep(1.0)
+    grabbed, frame = stream.read()
+    if not grabbed or frame is None:
+        logger.error("Failed to retrieve frames from camera source. Exiting.")
+        stream.stop()
+        return
+
+    # Initialize Tracker
+    tracker = ObjectTracker(conf_threshold=CONFIDENCE_THRESHOLD)
+
+    # Initialize Counter and restore counts
+    counter = LineCounter(line_start=LINE_START, line_end=LINE_END, buffer_pixels=15)
+    counter.total_in = stats["total_in"]
+    counter.total_out = stats["total_out"]
+
+    # Start API server if requested
+    api_server = None
+    if args.with_api:
+        api_server = start_api_server(db, counter)
+
+    # Timing variables
+    prev_time = time.time()
+    last_snapshot_time = time.time()
+    snapshot_interval = 30  # seconds
+
+    if not args.headless:
+        cv2.namedWindow("People Counting System", cv2.WINDOW_NORMAL)
+
+    logger.info("Pipeline started. Processing frames...")
+
+    try:
+        while True:
+            grabbed, frame = stream.read()
+            if not grabbed or frame is None:
+                # If it's a video file, it loops automatically inside VideoStream.
+                # If it's a webcam and fails, sleep and retry.
+                time.sleep(0.01)
+                continue
+
+            # Step 1: Run Tracker (ByteTrack)
+            tracked_objects = tracker.track(frame)
+
+            # Step 2: Update Line Crossing Counter
+            events = counter.update(tracked_objects)
+
+            # Step 3: Log events to Database immediately
+            for ev in events:
+                db.log_crossing(
+                    track_id=ev["track_id"],
+                    direction=ev["direction"],
+                    confidence=ev["confidence"]
+                )
+
+            # Step 4: Periodically save occupancy snapshot (every 30s)
+            curr_time = time.time()
+            if curr_time - last_snapshot_time >= snapshot_interval:
+                db.save_snapshot(
+                    total_in=counter.total_in,
+                    total_out=counter.total_out,
+                    current_occupancy=counter.current_occupancy
+                )
+                last_snapshot_time = curr_time
+                logger.info(f"Occupancy Snapshot Saved: IN={counter.total_in} | OUT={counter.total_out} | CURRENT={counter.current_occupancy}")
+
+            # Step 5: Render OpenCV Display Window if not headless
+            if not args.headless:
+                fps = 1.0 / (time.time() - prev_time)
+                prev_time = time.time()
+
+                # Draw counting line (Red)
+                cv2.line(frame, LINE_START, LINE_END, (0, 0, 255), 3)
+
+                # Draw bounding boxes and IDs
+                for obj in tracked_objects:
+                    x1, y1, x2, y2 = obj["box"]
+                    track_id = obj["track_id"]
+                    
+                    # Box
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    
+                    # Centroid
+                    cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
+                    cv2.circle(frame, (cx, cy), 4, (0, 255, 255), -1)
+                    
+                    # Label
+                    cv2.putText(frame, f"ID: {track_id}", (x1, max(y1 - 10, 15)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                # Overlay Statistics
+                overlay = frame.copy()
+                cv2.rectangle(overlay, (10, 10), (240, 130), (0, 0, 0), -1)
+                cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
+                
+                cv2.putText(frame, f"IN: {counter.total_in}", (20, 35),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                cv2.putText(frame, f"OUT: {counter.total_out}", (20, 65),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                cv2.putText(frame, f"CURRENT: {counter.current_occupancy}", (20, 95),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                cv2.putText(frame, f"FPS: {fps:.1f}", (20, 118),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1)
+
+                cv2.imshow("People Counting System", frame)
+                
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+            else:
+                # In headless mode, sleep slightly to prevent high CPU loop (YOLO tracking takes time, but this prevents spinning)
+                time.sleep(0.01)
+
+    except KeyboardInterrupt:
+        logger.info("Program interrupted by user.")
+    finally:
+        # Save final snapshot before exiting
+        db.save_snapshot(
+            total_in=counter.total_in,
+            total_out=counter.total_out,
+            current_occupancy=counter.current_occupancy
+        )
+        logger.info(f"Final occupancy snapshot saved: IN={counter.total_in} | OUT={counter.total_out}")
+        
+        # Stop streams
+        stream.stop()
+        if not args.headless:
+            cv2.destroyAllWindows()
+        logger.info("Cleanup completed. System shutdown.")
+
+if __name__ == "__main__":
+    main()

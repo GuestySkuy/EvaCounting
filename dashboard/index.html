@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Occupancy Monitor — Live Dashboard</title>
+    <meta name="description" content="Real-time people counting and room occupancy analytics dashboard.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CSS stylesheet -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon"></div>
+                <h2>SPIL Occupancy</h2>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" id="nav-dashboard">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+            </nav>
+            <div class="system-status">
+                <div class="status-indicator online"></div>
+                <span>System Connected</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div>
+                    <h1 id="main-heading">Real-Time Occupancy Monitor</h1>
+                    <p class="subtitle">Live tracking of room capacity and entrance activity</p>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-reset" class="btn btn-secondary">
+                        <span class="icon">🔄</span> Reset Counter
+                    </button>
+                </div>
+            </header>
+
+            <!-- Cards Grid -->
+            <section class="stats-grid">
+                <div class="stat-card occupancy" id="card-occupancy">
+                    <div class="card-header">
+                        <h3>Current Occupancy</h3>
+                        <span class="card-badge pulse">LIVE</span>
+                    </div>
+                    <div class="card-body">
+                        <span class="stat-value" id="val-current">0</span>
+                        <span class="stat-label">People Inside</span>
+                    </div>
+                    <div class="card-progress">
+                        <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card flow-in" id="card-in">
+                    <div class="card-header">
+                        <h3>Total Entered</h3>
+                        <span class="flow-icon in">↓</span>
+                    </div>
+                    <div class="card-body">
+                        <span class="stat-value" id="val-in">0</span>
+                        <span class="stat-label">Total Inflow</span>
+                    </div>
+                </div>
+
+                <div class="stat-card flow-out" id="card-out">
+                    <div class="card-header">
+                        <h3>Total Exited</h3>
+                        <span class="flow-icon out">↑</span>
+                    </div>
+                    <div class="card-body">
+                        <span class="stat-value" id="val-out">0</span>
+                        <span class="stat-label">Total Outflow</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics and Logs -->
+            <section class="details-grid">
+                <!-- Analytics Chart -->
+                <div class="panel chart-panel">
+                    <div class="panel-header">
+                        <h2>Hourly Activity Trend</h2>
+                        <span class="panel-subtitle">Today's hourly inflow vs outflow</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="chart-container">
+                            <canvas id="occupancy-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Logs -->
+                <div class="panel logs-panel">
+                    <div class="panel-header">
+                        <h2>Recent Event Logs</h2>
+                        <span class="panel-subtitle">Latest entrance crossings</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="table-wrapper">
+                            <table id="logs-table">
+                                <thead>
+                                    <tr>
+                                        <th>Person ID</th>
+                                        <th>Direction</th>
+                                        <th>Confidence</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logs-tbody">
+                                    <tr>
+                                        <td colspan="4" class="no-data">Waiting for events...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Script file -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

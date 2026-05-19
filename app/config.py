@@ -1,0 +1,33 @@
+import os
+from pathlib import Path
+
+# Paths
+BASE_DIR = Path(__file__).resolve().parent.parent
+DB_DIR = BASE_DIR / "data"
+DB_DIR.mkdir(exist_ok=True)
+DB_PATH = DB_DIR / "counting.db"
+
+# Camera Settings
+# Can be an integer (webcam index, e.g., 0 or 1) or a string (video file path)
+CAMERA_SOURCE = os.getenv("CAMERA_SOURCE", "0")
+if CAMERA_SOURCE.isdigit():
+    CAMERA_SOURCE = int(CAMERA_SOURCE)
+
+CAMERA_WIDTH = int(os.getenv("CAMERA_WIDTH", 640))
+CAMERA_HEIGHT = int(os.getenv("CAMERA_HEIGHT", 480))
+CAMERA_FPS = int(os.getenv("CAMERA_FPS", 30))
+
+# Inference Settings
+MODEL_PATH = os.getenv("MODEL_PATH", str(BASE_DIR / "models" / "yolo11n.pt"))
+INFERENCE_SIZE = int(os.getenv("INFERENCE_SIZE", 320))  # 320 is lighter for RPi, 640 is standard
+CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", 0.4))
+TARGET_CLASSES = [0]  # 0 is 'person' in COCO dataset
+
+# Tracking Settings
+TRACKER_TYPE = os.getenv("TRACKER_TYPE", "bytetrack.yaml")  # bytetrack.yaml or botsort.yaml
+
+# Counting Line Settings (Horizontal line by default, middle of frame)
+# Line is defined by two points: (x1, y1) to (x2, y2)
+LINE_START = (0, int(CAMERA_HEIGHT / 2))
+LINE_END = (CAMERA_WIDTH, int(CAMERA_HEIGHT / 2))
+LINE_DIRECTION = "horizontal"  # horizontal (up/down) or vertical (left/right)
