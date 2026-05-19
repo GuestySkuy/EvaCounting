@@ -26,8 +26,10 @@ TARGET_CLASSES = [0]  # 0 is 'person' in COCO dataset
 # Tracking Settings
 TRACKER_TYPE = os.getenv("TRACKER_TYPE", "bytetrack.yaml")  # bytetrack.yaml or botsort.yaml
 
-# Counting Line Settings (Horizontal line by default, middle of frame)
+# Counting Line Settings (Vertical line in the middle, top to bottom)
 # Line is defined by two points: (x1, y1) to (x2, y2)
-LINE_START = (0, int(CAMERA_HEIGHT / 2))
-LINE_END = (CAMERA_WIDTH, int(CAMERA_HEIGHT / 2))
-LINE_DIRECTION = "horizontal"  # horizontal (up/down) or vertical (left/right)
+# To make Left-to-Right = IN, we start from bottom and go to top.
+LINE_START = (int(CAMERA_WIDTH / 2), CAMERA_HEIGHT)
+LINE_END = (int(CAMERA_WIDTH / 2), 0)
+LINE_DIRECTION = "vertical"  # horizontal (up/down) or vertical (left/right)
+
