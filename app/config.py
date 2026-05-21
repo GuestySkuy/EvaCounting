@@ -18,7 +18,15 @@ CAMERA_HEIGHT = int(os.getenv("CAMERA_HEIGHT", 480))
 CAMERA_FPS = int(os.getenv("CAMERA_FPS", 30))
 
 # Inference Settings
-MODEL_PATH = os.getenv("MODEL_PATH", str(BASE_DIR / "models" / "yolo11n.pt"))
+NCNN_MODEL_PATH = BASE_DIR / "models" / "yolo11n_ncnn"
+PT_MODEL_PATH = BASE_DIR / "models" / "yolo11n.pt"
+
+if NCNN_MODEL_PATH.exists() and NCNN_MODEL_PATH.is_dir():
+    DEFAULT_MODEL_PATH = str(NCNN_MODEL_PATH)
+else:
+    DEFAULT_MODEL_PATH = str(PT_MODEL_PATH)
+
+MODEL_PATH = os.getenv("MODEL_PATH", DEFAULT_MODEL_PATH)
 INFERENCE_SIZE = int(os.getenv("INFERENCE_SIZE", 320))  # 320 is lighter for RPi, 640 is standard
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", 0.4))
 TARGET_CLASSES = [0]  # 0 is 'person' in COCO dataset
