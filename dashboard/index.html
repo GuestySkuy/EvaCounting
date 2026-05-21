@@ -83,6 +83,28 @@
                         <span class="stat-value" id="val-out">0</span>
                         <span class="stat-label">Total Outflow</span>
                     </div>
+            </section>
+
+            <!-- Live Video Stream Panel -->
+            <section class="video-section">
+                <div class="panel video-panel">
+                    <div class="panel-header">
+                        <h2>Live Camera Stream</h2>
+                        <span class="panel-subtitle">Real-time object tracking and boundary line counting</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="video-container">
+                            <img src="/api/video_feed" alt="Live Camera Feed" class="video-feed" onerror="this.style.display='none'; document.getElementById('video-error').style.display='flex';">
+                            <div class="video-overlay">
+                                <span class="badge-live"><span class="live-dot"></span> LIVE FEED</span>
+                            </div>
+                            <div id="video-error" class="video-error-placeholder" style="display: none;">
+                                <span class="error-icon">⚠️</span>
+                                <h3>Kamera / Video Feed Offline</h3>
+                                <p>Sistem tidak dapat terhubung ke umpan kamera. Hubungkan kamera dan pastikan server API sedang aktif.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 

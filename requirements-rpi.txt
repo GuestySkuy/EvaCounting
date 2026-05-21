@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------
 
 # Point to PyTorch CPU-only package repository
---index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 # Minimal PyTorch core dependencies for running YOLO11 CPU inference
 torch
@@ -17,6 +17,9 @@ tqdm>=4.64.0
 psutil
 py-cpuinfo
 requests>=2.23.0
+matplotlib>=3.3.0
+scipy>=1.4.1
+lapx>=0.5.2
 
 # API and Web Server
 fastapi>=0.104.0

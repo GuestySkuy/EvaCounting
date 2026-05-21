@@ -57,7 +57,8 @@ def main():
     ncnn_model = str(models_dir / "yolo11n_ncnn_model")
     
     print("=== People Counting System - Inference Benchmark ===")
-    print(f"Benchmarking on {num_frames := 50} dummy frames.")
+    num_frames = 50
+    print(f"Benchmarking on {num_frames} dummy frames.")
     
     results = {}
     

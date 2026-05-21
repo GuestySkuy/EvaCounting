@@ -1,15 +1,31 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 import uvicorn
 import threading
 import logging
+import cv2
+import time
 from pathlib import Path
 
 logger = logging.getLogger("APIServer")
 
-def create_app(db, counter):
+class FrameContainer:
+    """Thread-safe container to hold the latest video frame."""
+    def __init__(self):
+        self.frame = None
+        self.lock = threading.Lock()
+
+    def set(self, frame):
+        with self.lock:
+            self.frame = frame.copy() if frame is not None else None
+
+    def get(self):
+        with self.lock:
+            return self.frame
+
+def create_app(db, counter, frame_container=None):
     app = FastAPI(
         title="People Counting API",
         description="API for real-time room occupancy monitoring",
@@ -33,6 +49,32 @@ def create_app(db, counter):
             "total_in": counter.total_in,
             "total_out": counter.total_out
         }
+
+    @app.get("/api/video_feed")
+    def video_feed():
+        if frame_container is None:
+            raise HTTPException(status_code=404, detail="Video stream not enabled")
+
+        def generate():
+            try:
+                while True:
+                    frame = frame_container.get()
+                    if frame is None:
+                        time.sleep(0.04)
+                        continue
+                    ret, jpeg = cv2.imencode('.jpg', frame)
+                    if not ret:
+                        time.sleep(0.04)
+                        continue
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+                    time.sleep(0.04)  # ~25 FPS
+            except GeneratorExit:
+                logger.debug("Video feed client disconnected")
+            except Exception as e:
+                logger.error(f"Error in video feed generator: {e}")
+
+        return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")
 
     @app.get("/api/events")
     def get_events(limit: int = 20):
@@ -72,9 +114,9 @@ def create_app(db, counter):
             
     return app
 
-def start_api_server(db, counter, host="0.0.0.0", port=8000):
+def start_api_server(db, counter, frame_container=None, host="0.0.0.0", port=8000):
     """Starts the FastAPI server in a background thread."""
-    app = create_app(db, counter)
+    app = create_app(db, counter, frame_container=frame_container)
     
     # We disable uvicorn signal handlers so it doesn't hijack Ctrl+C from the main process loop
     config = uvicorn.Config(app=app, host=host, port=port, log_level="warning")

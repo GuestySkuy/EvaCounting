@@ -17,7 +17,7 @@ from app.camera import VideoStream
 from app.tracker import ObjectTracker
 from app.counter import LineCounter
 from app.database import DatabaseManager
-from api.server import start_api_server
+from api.server import start_api_server, FrameContainer
 
 # Setup Logger
 logging.basicConfig(
@@ -91,8 +91,10 @@ def main():
 
     # Start API server if requested
     api_server = None
+    frame_container = None
     if args.with_api:
-        api_server = start_api_server(db, counter)
+        frame_container = FrameContainer()
+        api_server = start_api_server(db, counter, frame_container=frame_container)
 
     # Timing variables
     prev_time = time.time()
@@ -138,8 +140,8 @@ def main():
                 last_snapshot_time = curr_time
                 logger.info(f"Occupancy Snapshot Saved: IN={counter.total_in} | OUT={counter.total_out} | CURRENT={counter.current_occupancy}")
 
-            # Step 5: Render OpenCV Display Window if not headless
-            if not args.headless:
+            # Step 5: Render annotations and display/stream
+            if not args.headless or args.with_api:
                 fps = 1.0 / (time.time() - prev_time)
                 prev_time = time.time()
 
@@ -176,10 +178,15 @@ def main():
                 cv2.putText(frame, f"FPS: {fps:.1f}", (20, 118),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1)
 
-                cv2.imshow("People Counting System", frame)
-                
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
+                # Update frame container for API stream
+                if args.with_api and frame_container is not None:
+                    frame_container.set(frame)
+
+                # Display local OpenCV window if not headless
+                if not args.headless:
+                    cv2.imshow("People Counting System", frame)
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
             else:
                 # In headless mode, sleep slightly to prevent high CPU loop (YOLO tracking takes time, but this prevents spinning)
                 time.sleep(0.01)
