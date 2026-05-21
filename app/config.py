@@ -18,11 +18,14 @@ CAMERA_HEIGHT = int(os.getenv("CAMERA_HEIGHT", 480))
 CAMERA_FPS = int(os.getenv("CAMERA_FPS", 30))
 
 # Inference Settings
-NCNN_MODEL_PATH = BASE_DIR / "models" / "yolo11n_ncnn"
+NCNN_MODEL_NEW = BASE_DIR / "models" / "yolo11n_ncnn_model"
+NCNN_MODEL_STD = BASE_DIR / "models" / "yolo11n_ncnn"
 PT_MODEL_PATH = BASE_DIR / "models" / "yolo11n.pt"
 
-if NCNN_MODEL_PATH.exists() and NCNN_MODEL_PATH.is_dir():
-    DEFAULT_MODEL_PATH = str(NCNN_MODEL_PATH)
+if NCNN_MODEL_NEW.exists() and NCNN_MODEL_NEW.is_dir():
+    DEFAULT_MODEL_PATH = str(NCNN_MODEL_NEW)
+elif NCNN_MODEL_STD.exists() and NCNN_MODEL_STD.is_dir():
+    DEFAULT_MODEL_PATH = str(NCNN_MODEL_STD)
 else:
     DEFAULT_MODEL_PATH = str(PT_MODEL_PATH)
 
