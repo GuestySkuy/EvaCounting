@@ -1,6 +1,24 @@
-ultralytics>=8.3.0
-opencv-python-headless>=4.8.0
+# -----------------------------------------------------------------
+# Hyper-Optimized CPU-only dependencies for Raspberry Pi
+# -----------------------------------------------------------------
+
+# Point to PyTorch CPU-only package repository
+--index-url https://download.pytorch.org/whl/cpu
+
+# Minimal PyTorch core dependencies for running YOLO11 CPU inference
+torch
+torchvision
+
+# Minimal core dependencies required by Ultralytics runtime (tracking & inference)
 numpy>=1.24.0
+pillow>=7.1.2
+pyyaml>=5.3.1
+tqdm>=4.64.0
+psutil
+py-cpuinfo
+requests>=2.23.0
+
+# API and Web Server
 fastapi>=0.104.0
 uvicorn>=0.24.0
 pydantic>=2.0

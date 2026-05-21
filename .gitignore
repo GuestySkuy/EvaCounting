@@ -1,0 +1,42 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Local SQLite Database files
+data/*.db
+data/*.db-journal
+data/*.db-shm
+data/*.db-wal
+
+# YOLO Models & Exported Binaries (to keep git repo lightweight)
+models/*.pt
+models/*.onnx
+models/*.engine
+models/*_ncnn_model/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+Desktop.ini
