@@ -11,7 +11,8 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from app.config import (
     CAMERA_SOURCE, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS,
-    CONFIDENCE_THRESHOLD, LINE_START, LINE_END, DB_PATH
+    CONFIDENCE_THRESHOLD, LINE_START, LINE_END, DB_PATH,
+    FRAME_SKIP_INTERVAL
 )
 from app.camera import VideoStream
 from app.tracker import ObjectTracker
@@ -96,10 +97,16 @@ def main():
         frame_container = FrameContainer()
         api_server = start_api_server(db, counter, frame_container=frame_container)
 
-    # Timing variables
+    # Timing and FPS variables
     prev_time = time.time()
     last_snapshot_time = time.time()
     snapshot_interval = 30  # seconds
+    
+    # Frame Skipping & Rolling FPS Average state
+    frame_idx = 0
+    last_tracked_objects = []
+    fps_history = []
+    max_fps_history_len = 30
 
     if not args.headless:
         cv2.namedWindow("People Counting System", cv2.WINDOW_NORMAL)
@@ -115,8 +122,15 @@ def main():
                 time.sleep(0.01)
                 continue
 
-            # Step 1: Run Tracker (ByteTrack)
-            tracked_objects = tracker.track(frame)
+            frame_idx += 1
+
+            # Step 1: Run Tracker (ByteTrack) with Frame Skipping
+            if FRAME_SKIP_INTERVAL <= 1 or frame_idx == 1 or frame_idx % FRAME_SKIP_INTERVAL == 0:
+                tracked_objects = tracker.track(frame)
+                last_tracked_objects = tracked_objects
+            else:
+                # Reuse the tracking results from the last processed frame
+                tracked_objects = [obj.copy() for obj in last_tracked_objects]
 
             # Step 2: Update Line Crossing Counter
             events = counter.update(tracked_objects)
@@ -142,8 +156,17 @@ def main():
 
             # Step 5: Render annotations and display/stream
             if not args.headless or args.with_api:
-                fps = 1.0 / (time.time() - prev_time)
-                prev_time = time.time()
+                # Calculate FPS with rolling average of latencies to get the true frame rate
+                curr_time = time.time()
+                time_diff = curr_time - prev_time
+                prev_time = curr_time
+
+                fps_history.append(time_diff)
+                if len(fps_history) > max_fps_history_len:
+                    fps_history.pop(0)
+
+                total_time = sum(fps_history)
+                fps = len(fps_history) / total_time if total_time > 0 else 0.0
 
                 # Draw counting line (Red)
                 cv2.line(frame, LINE_START, LINE_END, (0, 0, 255), 3)

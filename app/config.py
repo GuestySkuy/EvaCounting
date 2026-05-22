@@ -37,6 +37,10 @@ TARGET_CLASSES = [0]  # 0 is 'person' in COCO dataset
 # Tracking Settings
 TRACKER_TYPE = os.getenv("TRACKER_TYPE", "bytetrack.yaml")  # bytetrack.yaml or botsort.yaml
 
+# Frame Skipping Settings
+# 1 = no skipping (process every frame), 2 = process 1 out of 2 frames, 3 = process 1 out of 3, etc.
+FRAME_SKIP_INTERVAL = int(os.getenv("FRAME_SKIP_INTERVAL", 2))
+
 # Counting Line Settings (Vertical line in the middle, top to bottom)
 # Line is defined by two points: (x1, y1) to (x2, y2)
 # To make Left-to-Right = IN, we start from bottom and go to top.
