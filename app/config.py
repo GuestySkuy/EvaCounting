@@ -41,6 +41,14 @@ TRACKER_TYPE = os.getenv("TRACKER_TYPE", "bytetrack.yaml")  # bytetrack.yaml or 
 # 1 = no skipping (process every frame), 2 = process 1 out of 2 frames, 3 = process 1 out of 3, etc.
 FRAME_SKIP_INTERVAL = int(os.getenv("FRAME_SKIP_INTERVAL", 2))
 
+# Region of Interest (ROI) Settings
+USE_ROI = os.getenv("USE_ROI", "True").lower() == "true"
+ROI_X1 = int(os.getenv("ROI_X1", 160))
+ROI_Y1 = int(os.getenv("ROI_Y1", 0))
+ROI_X2 = int(os.getenv("ROI_X2", 480))
+ROI_Y2 = int(os.getenv("ROI_Y2", 480))
+ROI_BOX = (ROI_X1, ROI_Y1, ROI_X2, ROI_Y2)
+
 # Counting Line Settings (Vertical line in the middle, top to bottom)
 # Line is defined by two points: (x1, y1) to (x2, y2)
 # To make Left-to-Right = IN, we start from bottom and go to top.

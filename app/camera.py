@@ -33,6 +33,8 @@ class VideoStream:
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
             self.cap.set(cv2.CAP_PROP_FPS, self.fps)
+            # Limit buffer size to 1 frame to prevent queue accumulation delay (lag)
+            self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             
             # Read back actual resolution
             self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -73,8 +75,13 @@ class VideoStream:
                 self.grabbed = grabbed
                 self.frame = frame
                 
-            # Sleep slightly to not overload the CPU reading frames faster than needed
-            time.sleep(1 / self.fps)
+            # Sleep timing optimization:
+            # For live webcam, cap.read() blocks at the hardware level, so we sleep minimal (1ms) to keep the buffer flushed and delay at 0.
+            # For video files, we sleep according to the FPS to maintain accurate playback speed.
+            if isinstance(self.source, int):
+                time.sleep(0.001)
+            else:
+                time.sleep(1 / self.fps)
 
     def read(self):
         with self.read_lock:

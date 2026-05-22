@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from app.config import (
     CAMERA_SOURCE, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS,
     CONFIDENCE_THRESHOLD, LINE_START, LINE_END, DB_PATH,
-    FRAME_SKIP_INTERVAL
+    FRAME_SKIP_INTERVAL, USE_ROI, ROI_BOX, ROI_X1, ROI_Y1
 )
 from app.camera import VideoStream
 from app.tracker import ObjectTracker
@@ -124,9 +124,20 @@ def main():
 
             frame_idx += 1
 
-            # Step 1: Run Tracker (ByteTrack) with Frame Skipping
+            # Step 1: Run Tracker (ByteTrack) with Frame Skipping and ROI
             if FRAME_SKIP_INTERVAL <= 1 or frame_idx == 1 or frame_idx % FRAME_SKIP_INTERVAL == 0:
-                tracked_objects = tracker.track(frame)
+                if USE_ROI and ROI_BOX is not None:
+                    # Crop frame to ROI for faster inference
+                    frame_roi = frame[ROI_Y1:ROI_Y2, ROI_X1:ROI_X2]
+                    tracked_objects = tracker.track(frame_roi)
+                    
+                    # Shift coordinates back to original full frame space
+                    for obj in tracked_objects:
+                        x1, y1, x2, y2 = obj["box"]
+                        obj["box"] = [x1 + ROI_X1, y1 + ROI_Y1, x2 + ROI_X1, y2 + ROI_Y1]
+                else:
+                    tracked_objects = tracker.track(frame)
+                
                 last_tracked_objects = tracked_objects
             else:
                 # Reuse the tracking results from the last processed frame
@@ -167,6 +178,13 @@ def main():
 
                 total_time = sum(fps_history)
                 fps = len(fps_history) / total_time if total_time > 0 else 0.0
+
+                # Draw ROI border if active (Thin cyan box)
+                if USE_ROI and ROI_BOX is not None:
+                    rx1, ry1, rx2, ry2 = ROI_BOX
+                    cv2.rectangle(frame, (rx1, ry1), (rx2, ry2), (255, 255, 0), 1, lineType=cv2.LINE_AA)
+                    cv2.putText(frame, "ROI ACTIVE", (rx1 + 10, ry1 + 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 0), 1, lineType=cv2.LINE_AA)
 
                 # Draw counting line (Red)
                 cv2.line(frame, LINE_START, LINE_END, (0, 0, 255), 3)
