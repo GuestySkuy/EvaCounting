@@ -28,8 +28,8 @@ class LineCounter:
 
     @property
     def current_occupancy(self):
-        """Returns the real-time count of people detected in the current frame."""
-        return self.detected_count
+        """Returns occupancy based on line crossings: +1 for IN, -1 for OUT."""
+        return max(0, self.total_in - self.total_out)
 
     def _get_side_and_distance(self, centroid):
         """
@@ -61,7 +61,6 @@ class LineCounter:
         """
         events = []
         current_ids = set()
-        right_side_count = 0  # Count people on the RIGHT side of the line (inside)
 
         for obj in tracked_objects:
             track_id = obj["track_id"]
@@ -75,10 +74,6 @@ class LineCounter:
             ]
             
             side, dist = self._get_side_and_distance(centroid)
-            
-            # Count people whose centroid is on the right side (side == 1 = inside)
-            if side == 1:
-                right_side_count += 1
             
             # If the object is within the buffer zone, we don't change its state
             # but we initialize it if it's new and outside the buffer
@@ -111,9 +106,6 @@ class LineCounter:
                         "confidence": obj.get("confidence", 1.0)
                     })
                     self.track_states[track_id] = side
-
-        # Update real-time presence count (only people on the right/inside)
-        self.detected_count = right_side_count
 
         # Clean up old track IDs that are no longer active to prevent memory growth
         # We keep them in states for a few frames to prevent re-detecting them with same ID,
