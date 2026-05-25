@@ -143,7 +143,8 @@ def main():
                 # Reuse the tracking results from the last processed frame
                 tracked_objects = [obj.copy() for obj in last_tracked_objects]
 
-            # Step 2: Update Line Crossing Counter
+            # Step 2: Update real-time presence count + line crossing events
+            counter.detected_count = len(tracked_objects)
             events = counter.update(tracked_objects)
 
             # Step 3: Log events to Database immediately

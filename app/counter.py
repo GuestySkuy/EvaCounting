@@ -17,15 +17,19 @@ class LineCounter:
         # State tracking: track_id -> last known side (+1 for IN side, -1 for OUT side, 0 for buffer)
         self.track_states = {}
         
-        # Overall stats
+        # Overall stats (line crossing - used for event logging & chart)
         self.total_in = 0
         self.total_out = 0
+        
+        # Real-time presence count (updated each frame from main loop)
+        self.detected_count = 0
         
         logger.info(f"Line Counter initialized with line: {line_start} -> {line_end}")
 
     @property
     def current_occupancy(self):
-        return max(0, self.total_in - self.total_out)
+        """Returns the real-time count of people detected in the current frame."""
+        return self.detected_count
 
     def _get_side_and_distance(self, centroid):
         """
