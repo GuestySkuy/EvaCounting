@@ -60,9 +60,9 @@ async function fetchStats() {
         const data = await response.json();
         
         // Update DOM
-        valCurrent.innerText = data.current_occupancy;
-        valIn.innerText = data.total_in;
-        valOut.innerText = data.total_out;
+        if (valCurrent) valCurrent.innerText = data.current_occupancy;
+        if (valIn) valIn.innerText = data.total_in;
+        if (valOut) valOut.innerText = data.total_out;
         
         // Update progress bar width
         // Max capacity helper representation (e.g. 50 capacity cap for visual)
@@ -144,13 +144,9 @@ function initChart() {
     const ctx = document.getElementById('occupancy-chart').getContext('2d');
     
     // Create elegant grid gradients
-    const gradientIn = ctx.createLinearGradient(0, 0, 0, 300);
-    gradientIn.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
-    gradientIn.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
-
-    const gradientOut = ctx.createLinearGradient(0, 0, 0, 300);
-    gradientOut.addColorStop(0, 'rgba(239, 68, 68, 0.25)');
-    gradientOut.addColorStop(1, 'rgba(239, 68, 68, 0.00)');
+    const gradientOccupancy = ctx.createLinearGradient(0, 0, 0, 300);
+    gradientOccupancy.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
+    gradientOccupancy.addColorStop(1, 'rgba(139, 92, 246, 0.00)');
 
     occupancyChart = new Chart(ctx, {
         type: 'line',
@@ -158,26 +154,15 @@ function initChart() {
             labels: [], // Hourly labels, e.g. 09:00, 10:00
             datasets: [
                 {
-                    label: 'Entered (IN)',
+                    label: 'People Inside (Occupancy)',
                     data: [],
-                    borderColor: '#10B981',
-                    backgroundColor: gradientIn,
+                    borderColor: '#8B5CF6',
+                    backgroundColor: gradientOccupancy,
                     fill: true,
                     tension: 0.4,
                     borderWidth: 3,
                     pointRadius: 4,
-                    pointBackgroundColor: '#10B981',
-                },
-                {
-                    label: 'Exited (OUT)',
-                    data: [],
-                    borderColor: '#EF4444',
-                    backgroundColor: gradientOut,
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#EF4444',
+                    pointBackgroundColor: '#8B5CF6',
                 }
             ]
         },
@@ -240,12 +225,16 @@ function updateChartData(summary) {
     summary.sort((a, b) => a.hour.localeCompare(b.hour));
     
     const labels = summary.map(item => item.hour);
-    const dataIn = summary.map(item => item.in);
-    const dataOut = summary.map(item => item.out);
+    
+    // Calculate running/cumulative occupancy throughout the day
+    let current = 0;
+    const dataOccupancy = summary.map(item => {
+        current += (item.in - item.out);
+        return Math.max(0, current);
+    });
     
     occupancyChart.data.labels = labels;
-    occupancyChart.data.datasets[0].data = dataIn;
-    occupancyChart.data.datasets[1].data = dataOut;
+    occupancyChart.data.datasets[0].data = dataOccupancy;
     
     occupancyChart.update();
 }

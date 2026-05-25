@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from app.config import (
     CAMERA_SOURCE, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS,
     CONFIDENCE_THRESHOLD, LINE_START, LINE_END, DB_PATH,
-    FRAME_SKIP_INTERVAL, USE_ROI, ROI_BOX, ROI_X1, ROI_Y1
+    FRAME_SKIP_INTERVAL, USE_ROI, ROI_BOX, ROI_X1, ROI_Y1, ROI_X2, ROI_Y2
 )
 from app.camera import VideoStream
 from app.tracker import ObjectTracker
@@ -205,18 +205,14 @@ def main():
                     cv2.putText(frame, f"ID: {track_id}", (x1, max(y1 - 10, 15)),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                # Overlay Statistics
+                # Overlay Statistics (Focusing only on CURRENT occupancy)
                 overlay = frame.copy()
-                cv2.rectangle(overlay, (10, 10), (240, 130), (0, 0, 0), -1)
+                cv2.rectangle(overlay, (10, 10), (240, 80), (0, 0, 0), -1)
                 cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
                 
-                cv2.putText(frame, f"IN: {counter.total_in}", (20, 35),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                cv2.putText(frame, f"OUT: {counter.total_out}", (20, 65),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                cv2.putText(frame, f"CURRENT: {counter.current_occupancy}", (20, 95),
+                cv2.putText(frame, f"CURRENT: {counter.current_occupancy}", (20, 40),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                cv2.putText(frame, f"FPS: {fps:.1f}", (20, 118),
+                cv2.putText(frame, f"FPS: {fps:.1f}", (20, 68),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1)
 
                 # Update frame container for API stream

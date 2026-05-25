@@ -38,7 +38,7 @@
             <header class="header">
                 <div>
                     <h1 id="main-heading">Real-Time Occupancy Monitor</h1>
-                    <p class="subtitle">Live tracking of room capacity and entrance activity</p>
+                    <p class="subtitle">Live tracking of building capacity and occupancy status</p>
                 </div>
                 <div class="header-actions">
                     <button id="btn-reset" class="btn btn-secondary">
@@ -62,27 +62,6 @@
                         <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
                     </div>
                 </div>
-
-                <div class="stat-card flow-in" id="card-in">
-                    <div class="card-header">
-                        <h3>Total Entered</h3>
-                        <span class="flow-icon in">↓</span>
-                    </div>
-                    <div class="card-body">
-                        <span class="stat-value" id="val-in">0</span>
-                        <span class="stat-label">Total Inflow</span>
-                    </div>
-                </div>
-
-                <div class="stat-card flow-out" id="card-out">
-                    <div class="card-header">
-                        <h3>Total Exited</h3>
-                        <span class="flow-icon out">↑</span>
-                    </div>
-                    <div class="card-body">
-                        <span class="stat-value" id="val-out">0</span>
-                        <span class="stat-label">Total Outflow</span>
-                    </div>
             </section>
 
             <!-- Live Video Stream Panel -->
@@ -113,8 +92,8 @@
                 <!-- Analytics Chart -->
                 <div class="panel chart-panel">
                     <div class="panel-header">
-                        <h2>Hourly Activity Trend</h2>
-                        <span class="panel-subtitle">Today's hourly inflow vs outflow</span>
+                        <h2>Hourly Occupancy Trend</h2>
+                        <span class="panel-subtitle">Today's hourly building occupancy levels</span>
                     </div>
                     <div class="panel-body">
                         <div class="chart-container">
